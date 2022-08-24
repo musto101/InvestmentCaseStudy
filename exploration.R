@@ -40,7 +40,7 @@ mega_qtr_yr_plot <- mega_dat_qtr %>%
 
 ## difference from last year ##
 
-actual_difference <- (1 - 842013.6/889745.6) * 100 # down 5.36% from last year
+actual_difference <- percent((1 - 842013.6/889745.6), 0.01) # down 5.36% from last year
 
 ## past performance vs future performance in terms of transactions ##
 
@@ -51,7 +51,7 @@ mega_qtr_yr_plot <- mega_dat_qtr %>%
 
 ## transaction difference ##
 
-transact_diff <- (1- 36368/37074) * 100 # 1.9043
+transact_diff <- (1 - 36368/37074) * 100 # 1.9043
 
 ## customer value ##
 
@@ -59,7 +59,7 @@ customers <- read_excel('data/Retail_Data.xlsx', sheet = 2)
 
 mega_customer_dat <- retail_transactions %>% 
   left_join(customers) %>% 
-  filter(merchant_name == 'MegaCo', tag_user %in% c('Fuel', 'Supermarket')) %>% 
+  filter(merchant_name == 'MegaCo', tag_user %in% c('Fuel', 'Supermarket'))  
   
 
 sum(is.na(mega_customer_dat))/nrow(mega_customer_dat)
@@ -85,6 +85,27 @@ new_customer <- mega_customer_rs %>% filter(transaction_date == 2014.4)
 new_customer %>% ggplot(aes(as.factor(salary_range), revenue)) +
   geom_bar(stat = 'identity') + theme_economist() +
   labs(x = 'Salary Range', 'Revenue')
+
+## over time ##
+mega_customer_rs %>%
+  ggplot(aes(as.factor(transaction_date), revenue, color = salary_range,
+             group = salary_range)) +
+  geom_line(stat = 'identity') + theme_economist() +
+  labs(x = 'Year Quarter', 'Revenue') + scale_color_brewer(palette = "Paired")
+
+mega_customer_rs %>%
+  ggplot(aes(as.factor(transaction_date), transactions, color = salary_range,
+             group = salary_range)) +
+  geom_line(stat = 'identity') + theme_economist() +
+  labs(x = 'Year Quarter', 'transactions') +
+  scale_color_brewer(palette = "Paired")
+
+mega_customer_rs %>%
+  ggplot(aes(as.factor(transaction_date), num_customers, color = salary_range,
+             group = salary_range)) +
+  geom_line(stat = 'identity') + theme_economist() +
+  labs(x = 'Year Quarter', y ='Number of Customers') +
+  scale_color_brewer(palette = "Paired")
 
 ## transactions ##
 
@@ -196,6 +217,7 @@ table(retail_transactions$merchant_name)
 
 
 retail_all <- retail_transactions %>% 
+  filter(tag_user %in% c('Fuel', 'Supermarket')) %>% 
   group_by(year_quarter = quarter(as.POSIXlt(transaction_date,
                                                  format="%Y-%m-%d"),
                                       with_year = T), merchant_name) %>% 
@@ -233,4 +255,111 @@ retail_tog %>% ggplot(aes(as.factor(year_quarter), transactions,  group = 1)) +
 retail_tog %>% ggplot(aes(as.factor(year_quarter), num_customers,  group = 1)) +
   geom_line() + theme_economist() + scale_color_brewer(palette = "Dark2") +
   labs(x = 'Year Quarter', y = 'Number of Customers')
+
+## megaco customer salaries ##
+
+
+tran_per_customer <- mega_customer_dat %>% 
+  group_by(year_quarter = quarter(as.POSIXlt(transaction_date, 
+                                             format="%Y-%m-%d"),with_year = T),
+                                  salary_range) %>% 
+  summarise(trans_per_customer = n()/length(unique(user_ref)),
+            rev_per_customer = round(sum(amount)/length(unique(user_ref)),2),
+            rev_per_trans = round(sum(amount)/n(),2))
+
+tran_per_customer %>%
+  ggplot(aes(as.factor(year_quarter), trans_per_customer, 
+             group = salary_range, color = salary_range)) +
+  geom_line() + theme_economist() + scale_color_brewer(palette = "Paired") +
+  labs(x = 'Year Quarter', y = 'Transactions')
+
+tran_per_customer %>%
+  ggplot(aes(as.factor(year_quarter), rev_per_customer, 
+             group = salary_range, color = salary_range)) +
+  geom_line() + theme_economist() + scale_color_brewer(palette = "Paired") +
+  labs(x = 'Year Quarter', y = 'Revenue')
+
+tran_per_customer %>%
+  ggplot(aes(as.factor(year_quarter), rev_per_trans, 
+             group = salary_range, color = salary_range)) +
+  geom_line() + theme_economist() + scale_color_brewer(palette = "Paired") +
+  labs(x = 'Year Quarter', y = 'Revenue per Tran')
+
+## lunchco customers ##
+
+lunch_customer_dat <- retail_transactions %>% 
+  left_join(customers) %>% 
+  filter(merchant_name == 'LunchCo', tag_user %in% c('Fuel', 'Supermarket'))
+
+lunch_customer_dat <- na.omit(lunch_customer_dat)
+
+lunch_per_customer <- lunch_customer_dat %>% 
+  group_by(year_quarter = quarter(as.POSIXlt(transaction_date, 
+                                             format="%Y-%m-%d"),with_year = T),
+           salary_range) %>% 
+  summarise(trans_per_customer = n()/length(unique(user_ref)),
+            rev_per_customer = round(sum(amount)/length(unique(user_ref)),2),
+            rev_per_trans = round(sum(amount)/n(),2))
+
+lunch_per_customer %>%
+  ggplot(aes(as.factor(year_quarter), trans_per_customer, 
+             group = salary_range, color = salary_range)) +
+  geom_line() + theme_economist() + scale_color_brewer(palette = "Paired") +
+  labs(x = 'Year Quarter', y = 'Transactions')
+
+lunch_per_customer %>%
+  ggplot(aes(as.factor(year_quarter), rev_per_customer, 
+             group = salary_range, color = salary_range)) +
+  geom_line() + theme_economist() + scale_color_brewer(palette = "Paired") +
+  labs(x = 'Year Quarter', y = 'Revenue')
+
+lunch_per_customer %>%
+  ggplot(aes(as.factor(year_quarter), rev_per_trans, 
+             group = salary_range, color = salary_range)) +
+  geom_line() + theme_economist() + scale_color_brewer(palette = "Paired") +
+  labs(x = 'Year Quarter', y = 'Revenue per Tran')
+
+# ### retention for megaco ##
+# 
+# x <- mega_dat %>% group_by(transaction_date, user_ref) %>% 
+#   mutate(num_visits = length(unique(transaction_date)),
+#          transactions = n()) %>% 
+#   group_by(user_ref) %>% 
+#   mutate(num_visits = sum(num_visits), num_transactions = sum(transactions)) %>% 
+#   ungroup() %>% 
+#   group_by(transaction_date, salary_ran)
+
+### number of customers all together by salary range ##
+
+retail_customer_dat <- retail_transactions %>% 
+  left_join(customers) %>% 
+  filter(tag_user %in% c('Fuel', 'Supermarket')) %>% 
+  group_by(year_quarter = quarter(as.POSIXlt(transaction_date, 
+                                             format = "%Y-%m-%d"),
+                                  with_year = T), salary_range) %>% 
+  summarise(rev_per_customer = sum(amount)/length(unique(user_ref)),
+            trans_per_customer = n()/length(unique(user_ref)),
+            rev_per_transaction = sum(amount)/n())
+
+retail_customer_dat <- na.omit(retail_customer_dat)
+
+retail_customer_dat %>% 
+  ggplot(aes(factor(year_quarter), rev_per_customer, group = salary_range,
+             color = salary_range)) + geom_line() + theme_economist() +
+  labs(x = 'Year Quarter', y = 'Revenue') +
+  scale_color_brewer(palette = "Paired")
+
+retail_customer_dat %>% 
+  ggplot(aes(factor(year_quarter), trans_per_customer, group = salary_range,
+             color = salary_range)) + geom_line() + theme_economist() +
+  labs(x = 'Year Quarter', y = 'Transactions')+
+  scale_color_brewer(palette = "Paired")
+
+retail_customer_dat %>% 
+  ggplot(aes(factor(year_quarter), rev_per_transaction, group = salary_range,
+             color = salary_range)) + geom_line() + theme_economist() +
+  labs(x = 'Year Quarter', y = 'Rev per Transaction')+
+  scale_color_brewer(palette = "Paired")
+
+
 
